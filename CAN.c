@@ -3,7 +3,13 @@
 #include <semaphore.h>
 #include <stdint.h>
 
-
+typedef struct 
+{
+   uint32_t id; 
+   uint32_t mask ; 
+   uint8_t ext_id: :1; 
+   uint8_t rtr:1; 
+ }TCAN_FILTER; 
 
 typedef struct {
 uint32_t id; // indetyfikator wiadomości
@@ -94,3 +100,64 @@ for (uint8_t i = 0 ; i<msg->dlc;i++)
 CANCDMO |= (1 << CANMOB0); 
 
 while (CANGSTA & (1 << TSBSY)); // oczekiwanie zakończenia pracy nadajnika 
+
+void can_receive (uint8_t mob )
+{
+   if (mob > 14 ) 
+   {
+      mob = 14 ; // zabezpiecznie przed błędnym numerem MOb 
+   }
+   CANPAGE = (mob << 4); 
+
+    // Odbieranie wiadomości : 
+if (CANSTMOB &(1<<RXOK)) // jeśli wiadomość zostła odebrana
+{
+static TCAN_MSG msg ; // 
+msg.dlc  = CANCDMOB  & 0x0F; // odczytywanie wartości pola DLC odebranej ramki
+
+// // odczytywanie i zapisywanie odebranych bajtów danych do struktury 
+
+for (uint8_t i = 0; i<msg.dlc;i++)
+{
+   msg.data[i] = CANMSG; 
+}
+
+
+
+}
+CANSTMOB &=0; // zerowanie rejestru 
+CANCDMOB = 0 ; // zerowanie rejestru DLC i MOb 
+CANCMOB |= (1 << CANMOB1); //Rozpoczęcie procesu odbierania wiadomosci 
+}
+void set_can_filter(uint8_t mob, TCAN_FILTER *flt)
+{
+   if (mob > 14)
+   {
+mob = 14;  // zabezpieczenie przed podaniem błędnego mob ; 
+   }
+
+
+   CANPAGE = (mob << 4); // wybór mob do odbierania wiadomości  
+   CANSTMOB &=0; // Zerowanie rejestru statusu MOb metodą read-modify-write
+   CANCDMOB = 0; 
+ 
+
+
+ // zapisanie 11-bitowej maski w rejestrach wybranego MOb : 
+   CANIDM4 = 0 ; 
+   CANIDM3 = 0; 
+   CANIDM2 = (uint8_t) (flt->mask << 5 ); 
+   CANIDM1 = (uint8_t) (flt->mask >> 3); 
+
+
+
+    // Sekcja 3 - zapisanie 11-bit ID w rejestrach wybranego MOb
+     CANIDT4 = 0 ; 
+   CANIDT3 = 0; 
+   CANIDT2 = (uint8_t) (flt->id << 5 ); 
+   CANIDT1 = (uint8_t) (flt->id >> 3); 
+
+CANCDMOB |= (1<< CANMOB1); // rozpoczęcie procesu odbierania wiadomości
+ 
+     
+}
