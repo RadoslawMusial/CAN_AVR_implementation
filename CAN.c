@@ -1,16 +1,20 @@
 #include <stdio.h>
-#include <pthread.h>
-#include <semaphore.h>
-#include <stdint.h>
+#include <avr/io.h>
+
+
+ #define LED (1<<PC0) // dioda jako wyjście 
+ #define LED_ON PORTC &=~LED // zaświeć diode 
+ #define LED_OFF PORTC |=LED // Zgaszenie 
+ #define LED_TOGG PORTC ^=LED // zmiana stanu 
 
 typedef struct 
 {
    uint32_t id; 
    uint32_t mask ; 
-   uint8_t ext_id: :1; 
+   uint8_t ext_id:1; 
    uint8_t rtr:1; 
  }TCAN_FILTER; 
-
+//
 typedef struct {
 uint32_t id; // indetyfikator wiadomości
 uint8_t ext_id:1;  // ramka standardowa
@@ -37,7 +41,7 @@ void can_send (uint8_t mob, CAN_MSG *msg)
 // 3 - ustawienie baud 
 // 4 - włączenie kontrolera 
 // 5 - oczekiwanie na bezczynności magistrali 
-void can_send (void)
+void can_int (void)
 {
    CANGCON |= (1 << ABEQ); // żądanie zaprzestania aktualnej transmisji 
 
@@ -160,4 +164,14 @@ mob = 14;  // zabezpieczenie przed podaniem błędnego mob ;
 CANCDMOB |= (1<< CANMOB1); // rozpoczęcie procesu odbierania wiadomości
  
      
+}
+
+int main ()
+{
+   DDRC | = LED; // ustaweienie pinu jako wyjście 
+   LED_OFF; 
+   can_init(); // inicjalizacja CAN ; 
+
+   TCAN_FILTER filter ; 
+
 }
